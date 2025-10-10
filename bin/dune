@@ -1,0 +1,4 @@
+(executable
+ (public_name jbl-horizons-api)
+ (name main)
+ (libraries jbl_horizons_api lwt core))
