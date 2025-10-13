@@ -3,6 +3,28 @@ open Cohttp
 open Cohttp_lwt_unix
 open Core
 
+module Command = struct
+  type t =
+    | ID of int
+    | DES of string
+    | IAU of int
+    | Name of string
+
+  let to_string t =
+    let furnish s : string =
+      String.substr_replace_all ~pattern:" " ~with_:"%20" s
+      |> String.substr_replace_all ~pattern:";" ~with_:"%3B"
+    in
+    let to_string = function
+      | ID id -> Int.to_string id
+      | DES s -> sprintf "DES=%s;" s
+      | IAU id -> sprintf "%d;" id
+      | Name s -> sprintf "%s;" s
+    in
+    to_string t |> furnish
+  ;;
+end
+
 module Body = struct
   (* let url = *)
   (*   "https://ssd.jpl.nasa.gov/api/horizons.api?format=text&COMMAND='1%3B'&EPHEM_TYPE=vectors&START_TIME='2025-10-10'&STOP_TIME='2025-10-11'&OBJ_DATA=NO&ref_system='icrf'&csv_format=yes" *)
@@ -41,13 +63,13 @@ module Body = struct
   ;;
 
   let fetch
-        (command : string)
-        (start : Time_float.t)
-        (stop : Time_float.t)
+        (command : Command.t)
+        ~(start : Time_float.t)
+        ~(stop : Time_float.t)
         (step : Time_float.Span.t)
     : string Lwt.t
     =
-    Client.get (Uri.of_string (create_url command start stop step))
+    Client.get (Uri.of_string (create_url Command.(to_string command) start stop step))
     >>= fun (resp, body) ->
     let code = resp |> Response.status |> Code.code_of_status in
     if code <> 200
@@ -230,27 +252,5 @@ module MBQuery = struct
     if code <> 200
     then Lwt.fail_with (Printf.sprintf "HTTP request failed with code %d" code)
     else body |> Cohttp_lwt.Body.to_string
-  ;;
-end
-
-module Command = struct
-  type t =
-    | ID of int
-    | DES of string
-    | IAU of int
-    | Name of string
-
-  let to_string t =
-    let furnish s : string =
-      String.substr_replace_all ~pattern:" " ~with_:"%20" s
-      |> String.substr_replace_all ~pattern:";" ~with_:"%3B"
-    in
-    let to_string = function
-      | ID id -> Int.to_string id
-      | DES s -> sprintf "DES=%s;" s
-      | IAU id -> sprintf "%d;" id
-      | Name s -> sprintf "%s;" s
-    in
-    to_string t |> furnish
   ;;
 end
