@@ -1,4 +1,5 @@
 open! Core
+module Parse = Parse_body
 
 let input =
   {|
