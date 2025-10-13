@@ -4,6 +4,12 @@ open Cohttp_lwt_unix
 open Core
 
 module Command = struct
+  (** Command type for specifying celestial objects in Horizons API queries.
+
+      - [ID] - Horizons ID number (e.g., 399 for Earth, 10 for Sun)
+      - [DES] - Object designation (e.g., "2025 TT" for provisional designations)
+      - [IAU] - IAU number for the object
+      - [Name] - Object name (e.g., "Mars", "Jupiter") *)
   type t =
     | ID of int
     | DES of string
@@ -79,48 +85,45 @@ module Body = struct
 end
 
 module SBQuery = struct
-  (*    Search for small-bodies with following keywords (R=real, I=integer, C=char). *)
-  (* Use comparisons from the set { <, >, <>, = }. Separate each field with a semi- *)
-  (* colon. Example search formulation: *)
+  (** Small-body query module for searching asteroids and comets.
 
-  (*                    A < 2.5; IN > 7.8; STYP = S; GM <> 0; *)
+      Search for small-bodies using orbital parameters and physical characteristics.
+      Use comparisons from the set {[<]}, {[>]}, {[<>]}, {[=]}. Separate each field with a semicolon.
 
-  (* The first group of keywords are common to asteroids AND comets: *)
+      Example search formulation:
+      {[A < 2.5; IN > 7.8; STYP = S; GM <> 0;]}
 
-  (*  Type     Keyword     Description *)
-  (*  ----     -------     ----------- *)
-  (*   C       NAME ...... Asteroid OR comet name fragment *)
-  (*   C       DES ....... Object designation *)
-  (*   R       EPOCH ..... Julian Date of osculating elements *)
-  (*   R       CALEPO .... Calendar date of osc. elements; YYYYMMDD.ffff *)
-  (*   R       A ......... Semi-major axis (AU) *)
-  (*   R       EC ........ Eccentricity *)
-  (*   R       IN ........ Inclination of orbit plane (DEG) wrt ecliptic *)
-  (*   R       OM ........ Longitude of Ascending Node (DEG) wrt ecliptic/equinox *)
-  (*   R       W ......... Argument of Perihelion (DEG) wrt ecliptic/equinox *)
-  (*   R       TP ........ Perihelion Julian Date *)
-  (*   R       CALTP ..... Perihelion calendar date; YYYYMMDD.ffff *)
-  (*   R       MA ........ Mean anomaly (DEG) *)
-  (*   R       PER ....... Orbital period (YRS) *)
-  (*   R       RAD ....... Object radius (KM) *)
-  (*   R       GM ........ Object GM (KM^3/S^2), only a few are known *)
-  (*   R       QR ........ Perihelion distance (AU) *)
-  (*   R       ADIST ..... Aphelion distance (AU) *)
-  (*   R       ANGMOM .... Specific angular momentum (AU^2/DAY) *)
-  (*   R       N ......... Mean motion (DEG/DAY) *)
-  (*   R       DAN ....... Heliocentric dist. (AU) of ascending node *)
-  (*   R       DDN ....... Heliocentric dist. (AU) of descending node *)
-  (*   R       L ......... Ecliptic longitude of perihelion (DEG) *)
-  (*   R       B ......... Ecliptic latitude of perihelion (DEG) *)
-  (*   I       NOBS ...... Number of astrometric determinations in solution *)
+      Example usage:
+      {["A < 2.5; IN > 10; AST;"        (* match parameters against asteroids ONLY *)]}
+      {["A < 2.5; IN > 10; AST; LIST;"  (* match AND display values of the parameters *)]} *)
 
-  (* For example, *)
+  (** Searchable parameters for small-bodies. Common to asteroids AND comets:
 
-  (*     "A < 2.5; IN > 10; AST;"        match parameters against asteroids ONLY. *)
-  (*     "A < 2.5; IN > 10; AST; LIST;"  match AND display values of the parameters. *)
-
-  (* curl -s "https://ssd.jpl.nasa.gov/api/horizons.api?format=text&COMMAND='A%20<%202.5%3B%20IN%20>%2010%3B%20AST%3B'" *)
-
+      {ul
+      {- [NAME] (string) - Asteroid OR comet name fragment}
+      {- [DES] (string) - Object designation}
+      {- [EPOCH] (float) - Julian Date of osculating elements}
+      {- [CALEPO] (float) - Calendar date of osc. elements; YYYYMMDD.ffff}
+      {- [A] (float) - Semi-major axis (AU)}
+      {- [EC] (float) - Eccentricity}
+      {- [IN] (float) - Inclination of orbit plane (DEG) wrt ecliptic}
+      {- [OM] (float) - Longitude of Ascending Node (DEG) wrt ecliptic/equinox}
+      {- [W] (float) - Argument of Perihelion (DEG) wrt ecliptic/equinox}
+      {- [TP] (float) - Perihelion Julian Date}
+      {- [CALTP] (float) - Perihelion calendar date; YYYYMMDD.ffff}
+      {- [MA] (float) - Mean anomaly (DEG)}
+      {- [PER] (float) - Orbital period (YRS)}
+      {- [RAD] (float) - Object radius (KM)}
+      {- [GM] (float) - Object GM (KM^3/S^2), only a few are known}
+      {- [QR] (float) - Perihelion distance (AU)}
+      {- [ADIST] (float) - Aphelion distance (AU)}
+      {- [ANGMOM] (float) - Specific angular momentum (AU^2/DAY)}
+      {- [N] (float) - Mean motion (DEG/DAY)}
+      {- [DAN] (float) - Heliocentric dist. (AU) of ascending node}
+      {- [DDN] (float) - Heliocentric dist. (AU) of descending node}
+      {- [L] (float) - Ecliptic longitude of perihelion (DEG)}
+      {- [B] (float) - Ecliptic latitude of perihelion (DEG)}
+      {- [NOBS] (int) - Number of astrometric determinations in solution}} *)
   type 'a param =
     | NAME : string param
     | DES : string param
@@ -147,12 +150,21 @@ module SBQuery = struct
     | B : float param
     | NOBS : int param [@deriving sexp]
 
+  (** Comparison operators for small-body search queries.
+
+      - [GT (value, param)] - Greater than: param > value
+      - [LT (value, param)] - Less than: param < value
+      - [NOT (value, param)] - Not equal: param <> value
+      - [EQ (value, param)] - Equal: param = value *)
   type comp =
     | GT : 'a * 'a param -> comp
     | LT : 'a * 'a param -> comp
     | NOT : 'a * 'a param -> comp
     | EQ : 'a * 'a param -> comp [@deriving sexp]
 
+  (** Small-body query type: a list of comparison constraints.
+
+      Example: [[LT (2.5, A); GT (10.0, IN)]] represents the query "A < 2.5; IN > 10;" *)
   type t = (comp list[@deriving sexp])
 
   let param_to_string : type a. a param -> string = function
