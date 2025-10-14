@@ -5,7 +5,15 @@ module SBQuery = Api.SBQuery
 let get_mb_list () = Lwt_main.run @@ Api.MBQuery.fetch () |> Parse_mb_query.parse
 
 let get_body (c : Api.Command.t) ~start ~stop step =
-  Lwt_main.run @@ Api.Body.fetch c ~start ~stop step |> Parse_body.parse_horizons_data
+  let rec loop i =
+    if i > 10 then failwith "Failed to fetch body";
+    match Lwt_main.run @@ Api.Body.fetch c ~start ~stop step with
+    | Some body -> Parse_body.parse_horizons_data body
+    | None ->
+      Core_unix.nanosleep 0.2 |> ignore;
+      loop (i + 1)
+  in
+  loop 0
 ;;
 
 let get_sb_list (q : SBQuery.t) =

@@ -74,14 +74,14 @@ module Body = struct
         ~(start : Time_float.t)
         ~(stop : Time_float.t)
         (step : Time_float.Span.t)
-    : string Lwt.t
+    : string option Lwt.t
     =
     Client.get (Uri.of_string (create_url Command.(to_string command) start stop step))
     >>= fun (resp, body) ->
     let code = resp |> Response.status |> Code.code_of_status in
     if code <> 200
-    then Lwt.fail_with (Printf.sprintf "HTTP request failed with code %d" code)
-    else body |> Cohttp_lwt.Body.to_string
+    then Lwt.return None
+    else Lwt.map (fun a -> Some a) (body |> Cohttp_lwt.Body.to_string)
   ;;
 end
 
@@ -98,33 +98,6 @@ module SBQuery = struct
       {["A < 2.5; IN > 10; AST;"        (* match parameters against asteroids ONLY *)]}
       {["A < 2.5; IN > 10; AST; LIST;"  (* match AND display values of the parameters *)]} *)
 
-  (** Searchable parameters for small-bodies. Common to asteroids AND comets:
-
-      {ul
-      {- [NAME] (string) - Asteroid OR comet name fragment}
-      {- [DES] (string) - Object designation}
-      {- [EPOCH] (float) - Julian Date of osculating elements}
-      {- [CALEPO] (float) - Calendar date of osc. elements; YYYYMMDD.ffff}
-      {- [A] (float) - Semi-major axis (AU)}
-      {- [EC] (float) - Eccentricity}
-      {- [IN] (float) - Inclination of orbit plane (DEG) wrt ecliptic}
-      {- [OM] (float) - Longitude of Ascending Node (DEG) wrt ecliptic/equinox}
-      {- [W] (float) - Argument of Perihelion (DEG) wrt ecliptic/equinox}
-      {- [TP] (float) - Perihelion Julian Date}
-      {- [CALTP] (float) - Perihelion calendar date; YYYYMMDD.ffff}
-      {- [MA] (float) - Mean anomaly (DEG)}
-      {- [PER] (float) - Orbital period (YRS)}
-      {- [RAD] (float) - Object radius (KM)}
-      {- [GM] (float) - Object GM (KM^3/S^2), only a few are known}
-      {- [QR] (float) - Perihelion distance (AU)}
-      {- [ADIST] (float) - Aphelion distance (AU)}
-      {- [ANGMOM] (float) - Specific angular momentum (AU^2/DAY)}
-      {- [N] (float) - Mean motion (DEG/DAY)}
-      {- [DAN] (float) - Heliocentric dist. (AU) of ascending node}
-      {- [DDN] (float) - Heliocentric dist. (AU) of descending node}
-      {- [L] (float) - Ecliptic longitude of perihelion (DEG)}
-      {- [B] (float) - Ecliptic latitude of perihelion (DEG)}
-      {- [NOBS] (int) - Number of astrometric determinations in solution}} *)
   type 'a param =
     | NAME : string param (** [NAME] - Asteroid OR comet name fragment *)
     | DES : string param (** [DES] - Object designation *)
@@ -151,18 +124,12 @@ module SBQuery = struct
     | L : float param (** [L] - Ecliptic longitude of perihelion (DEG) *)
     | B : float param (** [B] - Ecliptic latitude of perihelion (DEG) *)
     | NOBS : int param (** [NOBS] - Number of astrometric determinations in solution *)
-  [@deriving sexp]
 
-  (** Comparison operators for small-body search queries.
-      - [GT (value, param)] - Greater than: param > value
-      - [LT (value, param)] - Less than: param < value
-      - [NOT (value, param)] - Not equal: param <> value
-      - [EQ (value, param)] - Equal: param = value *)
   type comp =
-    | GT : 'a param * 'a -> comp
-    | LT : 'a param * 'a -> comp
-    | NOT : 'a param * 'a -> comp
-    | EQ : 'a param * 'a -> comp [@deriving sexp]
+    | GT : 'a param * 'a -> comp (** [GT (value, param)] - Greater than: param > value *)
+    | LT : 'a param * 'a -> comp (** [LT (value, param)] - Less than: param < value *)
+    | NOT : 'a param * 'a -> comp (** [NOT (value, param)] - Not equal: param <> value *)
+    | EQ : 'a param * 'a -> comp (** [EQ (value, param)] - Equal: param = value  *)
 
   (** Small-body query type: a list of comparison constraints.
 

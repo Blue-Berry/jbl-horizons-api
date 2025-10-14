@@ -1,6 +1,6 @@
 (library
  (name jbl_horizons_api)
- (libraries cohttp-lwt-unix lwt core)
+ (libraries cohttp-lwt-unix lwt core core_unix)
  (inline_tests)
  (preprocess
   (pps ppx_jane)))

@@ -1,0 +1,13 @@
+diff --git a/ocaml-lsp-server/src/inlay_hints.ml b/ocaml-lsp-server/src/inlay_hints.ml
+index daf085a3..4bcac6a6 100644
+--- a/ocaml-lsp-server/src/inlay_hints.ml
++++ b/ocaml-lsp-server/src/inlay_hints.ml
+@@ -44,7 +44,7 @@ let compute (state : State.t) { InlayHintParams.range; textDocument = { uri }; _
+             , hint_let_bindings
+             , hint_pattern_variables
+             , hint_function_params
+-            , not inside_test )
++            , false )
+         in
+         let hints = Query_commands.dispatch pipeline command in
+         List.filter_map

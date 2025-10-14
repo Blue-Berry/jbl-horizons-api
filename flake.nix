@@ -46,6 +46,7 @@
             src = ./.;
             buildInputs = with ocamlPackages; [
               core
+              core_unix
               ppx_jane
               lwt
               cohttp-lwt-unix
