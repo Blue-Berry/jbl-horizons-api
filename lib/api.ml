@@ -15,6 +15,7 @@ module Command = struct
     | DES of string
     | IAU of int
     | Name of string
+  [@@deriving sexp]
 
   let to_string t =
     let furnish s : string =
@@ -23,7 +24,7 @@ module Command = struct
     in
     let to_string = function
       | ID id -> Int.to_string id
-      | DES s -> sprintf "DES=%s;" s
+      | DES s -> sprintf "'DES=%s;'" s
       | IAU id -> sprintf "%d;" id
       | Name s -> sprintf "%s;" s
     in
