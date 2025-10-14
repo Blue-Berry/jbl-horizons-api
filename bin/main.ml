@@ -13,12 +13,20 @@ open! Core
 (* ;; *)
 
 (* let () = print_s (Jbl_horizons_api.sexp_of_ephemeris_data mb) *)
-let () =Random.self_init ()
-let sbs = (Jbl_horizons_api.(get_sb_list SBQuery.[ LT (1., A) ]) ) 
+let () = Random.self_init ()
+let sbs = Jbl_horizons_api.(get_sb_list SBQuery.[ LT (1., A) ])
 let sb = List.nth_exn sbs (Random.int (List.length sbs))
-let sb_ep = Jbl_horizons_api.(get_body (Command.DES sb.designation) ~start:(Time_float.now ()) ~stop:(Time_float.add (Time_float.now ()) Time_float.Span.day) Time_float.Span.hour)
+
+let sb_ep =
+  Jbl_horizons_api.(
+    get_body
+      (Command.DES sb.designation)
+      ~start:(Time_float.now ())
+      ~stop:(Time_float.add (Time_float.now ()) Time_float.Span.day)
+      Time_float.Span.hour)
+;;
 
 let () =
   print_endline sb.designation;
   print_s Jbl_horizons_api.(sexp_of_ephemeris_data sb_ep)
-
+;;
