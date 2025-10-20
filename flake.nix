@@ -50,6 +50,7 @@
               ppx_jane
               lwt
               cohttp-lwt-unix
+              ocaml_sqlite3
             ];
           };
 

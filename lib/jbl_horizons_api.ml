@@ -1,6 +1,7 @@
 open Core
 module Command = Api.Command
 module SBQuery = Api.SBQuery
+module Store = Body_store
 
 let get_mb_list () = Lwt_main.run @@ Api.MBQuery.fetch () |> Parse_mb_query.parse
 

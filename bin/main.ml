@@ -13,7 +13,6 @@ open! Core
 (* ;; *)
 
 (* let () = print_s (Jbl_horizons_api.sexp_of_ephemeris_data mb) *)
-let sbs = Jbl_horizons_api.(get_sb_list SBQuery.[ LT (IN, 1.) ])
 
 let get_ep sb =
   Jbl_horizons_api.(
@@ -24,7 +23,14 @@ let get_ep sb =
       Time_float.Span.hour)
 ;;
 
+(* let mbs = Jbl_horizons_api.(get_mb_list ()) *)
+let sbs = Jbl_horizons_api.(get_sb_list SBQuery.[ LT (A, 1.) ])
+
 let () =
-  List.iter sbs ~f:(fun sb ->
-    print_s (Jbl_horizons_api.sexp_of_ephemeris_data (get_ep sb.designation)))
+  let open Jbl_horizons_api in
+  match Store.open_db () with
+  | Error e -> print_endline e
+  | Ok db ->
+    List.iter sbs ~f:(fun b -> Store.insert_ephemeris db (get_ep b.designation) |> ignore);
+    Store.close_db db |> ignore
 ;;

@@ -1,2 +1,4 @@
 /.direnv/
 /_build/
+/horizons.db-journal
+/horizons.db
