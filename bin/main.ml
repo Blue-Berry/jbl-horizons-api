@@ -31,6 +31,10 @@ let () =
   match Store.open_db () with
   | Error e -> print_endline e
   | Ok db ->
-    List.iter sbs ~f:(fun b -> Store.insert_ephemeris db (get_ep b.designation) |> ignore);
+    let i = ref 0 in
+    List.iter sbs ~f:(fun b ->
+      Store.insert_ephemeris db (get_ep b.designation) |> ignore;
+      incr i;
+      print_endline @@ Int.to_string !i);
     Store.close_db db |> ignore
 ;;
