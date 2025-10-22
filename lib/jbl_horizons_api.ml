@@ -10,7 +10,7 @@ let get_body (c : Api.Command.t) ~start ~stop step =
     if i > 10 then failwith "Failed to fetch body";
     match Lwt_main.run @@ Api.Body.fetch c ~start ~stop step with
     | Some body -> Parse_body.parse_horizons_data body
-    | None ->
+    | (exception _) | None ->
       Core_unix.nanosleep 0.2 |> ignore;
       loop (i + 1)
   in

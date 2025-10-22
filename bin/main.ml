@@ -1,4 +1,5 @@
 open! Core
+open! Stdio
 
 (* let mb = Jbl_horizons_api.get_mb_list () |> List.hd_exn *)
 (* let () = print_endline mb.name *)
@@ -24,10 +25,17 @@ let get_ep sb =
 ;;
 
 (* let mbs = Jbl_horizons_api.(get_mb_list ()) *)
-let sbs = Jbl_horizons_api.(get_sb_list SBQuery.[ LT (A, 1.) ])
+let sbs =
+  print_endline "Starting";
+  Jbl_horizons_api.(get_sb_list SBQuery.[ LT (A, 1.5) ])
+  |> fun bs ->
+  print_endline @@ sprintf "Fetched %d sbs\n" (List.length bs);
+  bs
+;;
 
 let () =
   let open Jbl_horizons_api in
+  let mbs_len = List.length sbs in
   match Store.open_db () with
   | Error e -> print_endline e
   | Ok db ->
@@ -35,6 +43,6 @@ let () =
     List.iter sbs ~f:(fun b ->
       Store.insert_ephemeris db (get_ep b.designation) |> ignore;
       incr i;
-      print_endline @@ Int.to_string !i);
+      print_endline @@ sprintf "%d/%d" !i mbs_len);
     Store.close_db db |> ignore
 ;;
